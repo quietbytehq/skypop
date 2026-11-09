@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: Apache-2.0
+// Stage 7: mixed ledges in a neon harbour at dusk.
+LevelDef(
+    name: "Neon Docks",
+    time_limit: 130.0,
+    speed: 1.2,
+    weapon: Harpoon,
+    drop_chance: 0.2,
+    drop_table: [Bonus, Shield, Freeze, Slow, Double, Anchor],
+    theme: (sky_top: "#0f0c29", sky_bottom: "#b24592", accent: "#ff2bd6", decor: City),
+    orbs: [
+        (tier: XL, x: 200.0, y: 150.0, dir: 1, color: 0),
+        (tier: XL, x: 1080.0, y: 150.0, dir: -1, color: 1),
+        (tier: L, x: 640.0, y: 110.0, dir: 1, color: 2),
+    ],
+    platforms: [
+        (x: 140.0, y: 360.0, w: 160.0, h: 26.0, kind: Solid),
+        (x: 980.0, y: 360.0, w: 160.0, h: 26.0, kind: Solid),
+        (x: 470.0, y: 300.0, w: 110.0, h: 24.0, kind: Breakable),
+        (x: 700.0, y: 300.0, w: 110.0, h: 24.0, kind: Breakable),
+    ],
+)

@@ -1,0 +1,28 @@
+[package]
+name = "skypop"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+license = "Apache-2.0"
+description = "A Pang-inspired arcade game written in Rust with macroquad."
+authors = ["QuietByte <hello@quietbytehq.uk>"]
+repository = "https://github.com/quietbytehq/skypop"
+readme = "README.md"
+publish = false
+
+[dependencies]
+macroquad = { version = "0.4.16", features = ["audio"] }
+gilrs = { version = "0.11", features = ["serde-serialize"] }
+serde = { version = "1", features = ["derive"] }
+ron = "0.12"
+directories = "6"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

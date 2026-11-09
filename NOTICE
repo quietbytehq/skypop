@@ -1,0 +1,9 @@
+SkyPop, Copyright 2026 QuietByte
+
+Third-party asset
+ProggyClean (ProggyCleanTT), Copyright (c) 2004, 2005 Tristan Grimmer.
+MIT licence. Macroquad embeds this font as its default font.
+See LICENSES/ProggyClean.txt for the licence text.
+Source: https://github.com/bluescan/proggyfonts
+
+SkyPop generates its artwork and sound effects in code.

@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+// Stage 2: the first extra-large orb.
+LevelDef(
+    name: "Breezy Harbor",
+    time_limit: 100.0,
+    speed: 0.95,
+    weapon: Harpoon,
+    drop_chance: 0.18,
+    drop_table: [Bonus, Shield, Double],
+    theme: (sky_top: "#4facfe", sky_bottom: "#c2f5ff", accent: "#00e0ff", decor: Clouds),
+    orbs: [
+        (tier: XL, x: 300.0, dir: 1, color: 1),
+    ],
+)

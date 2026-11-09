@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: Apache-2.0
+// Stage 8: three giants between tall towers.
+LevelDef(
+    name: "Twilight Towers",
+    time_limit: 140.0,
+    speed: 1.25,
+    weapon: AnchorWire,
+    drop_chance: 0.2,
+    drop_table: [Bonus, Shield, Freeze, Slow, Double],
+    theme: (sky_top: "#141e30", sky_bottom: "#ff6e7f", accent: "#ffb347", decor: City),
+    orbs: [
+        (tier: XL, x: 180.0, y: 150.0, dir: 1, color: 3),
+        (tier: XL, x: 640.0, y: 130.0, dir: -1, color: 4),
+        (tier: XL, x: 1100.0, y: 150.0, dir: -1, color: 5),
+    ],
+    platforms: [
+        (x: 360.0, y: 250.0, w: 40.0, h: 220.0, kind: Solid),
+        (x: 880.0, y: 250.0, w: 40.0, h: 220.0, kind: Solid),
+        (x: 560.0, y: 420.0, w: 160.0, h: 24.0, kind: Breakable),
+    ],
+)
