@@ -14,6 +14,12 @@ Download a Linux or Windows package from [Releases](https://github.com/quietbyte
 
 Linux builds target x86_64 with glibc 2.28+ and OpenGL 3.3-compatible graphics. Windows builds target 64-bit Windows 10/11 with compatible graphics. Older systems and ARM are not currently supported or verified. Snap packages require a Linux distribution with snapd. A Snap package does not imply support for every Linux version.
 
+On Linux with snapd, install from the [Snap Store](https://snapcraft.io/skypop):
+
+```sh
+sudo snap install skypop
+```
+
 ## Controls
 
 | Action | Keyboard / mouse | Gamepad |
