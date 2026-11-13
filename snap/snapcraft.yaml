@@ -1,0 +1,31 @@
+name: skypop
+title: SkyPop
+base: core24
+version: '1.0.0'
+summary: Colourful rope-firing arcade action across ten stages
+description: |
+  Dodge bouncing balls, fire ropes to split them, and clear ten increasingly
+  fast stages. Collect health, shields and weapon upgrades while avoiding
+  steel balls, bombs and fireballs. Includes fullscreen play, local high
+  scores, controller support and adjustable music and effects.
+  Source code is available under Apache-2.0; bundled media has separate terms.
+grade: stable
+confinement: strict
+license: Proprietary
+contact: hello@quietbytehq.uk
+website: https://github.com/quietbytehq/skypop
+source-code: https://github.com/quietbytehq/skypop
+issues: https://github.com/quietbytehq/skypop/issues
+icon: snap/gui/skypop.png
+platforms:
+  amd64:
+apps:
+  skypop:
+    command: bin/launch-skypop
+    extensions: [gnome]
+    plugs: [audio-playback, joystick]
+parts:
+  skypop:
+    plugin: dump
+    source: build/snap-payload
+    stage-packages: [libasound2t64, libpulse0, libxinerama1, libxcursor1, libxi6, libxrandr2]

@@ -1,9 +1,20 @@
 SkyPop, Copyright 2026 QuietByte
 
-Third-party asset
-ProggyClean (ProggyCleanTT), Copyright (c) 2004, 2005 Tristan Grimmer.
-MIT licence. Macroquad embeds this font as its default font.
-See LICENSES/ProggyClean.txt for the licence text.
-Source: https://github.com/bluescan/proggyfonts
+Source code: Apache License 2.0 (see LICENSE).
 
-SkyPop generates its artwork and sound effects in code.
+Media: artwork supplied by QuietByte and AI-assisted artwork created for this game.
+Included with permission for redistribution as part of SkyPop.
+No external asset pack is knowingly included. Media is not automatically covered by the code licence.
+
+Fonts:
+- DejaVu Sans Bold: Bitstream Vera font licence and DejaVu public-domain changes; see LICENSES/LICENSE-DejaVu.txt.
+- Lato Bold and Semibold: SIL Open Font License 1.1; see LICENSES/LICENSE-Lato.txt.
+- Lilita One: SIL Open Font License 1.1; see LICENSES/LICENSE-LilitaOne.txt.
+
+Godot Engine and its bundled components: MIT and respective third-party licences;
+see LICENSES/GODOT-LICENSE.txt and LICENSES/GODOT-THIRD-PARTY.txt.
+
+Downloadable game audio: supplied by QuietByte, generated using ElevenLabs.
+Bundled for use within SkyPop only; not offered as isolated audio or under Apache-2.0.
+Included with permission for distribution within the game, subject to the provider terms.
+Terms: https://elevenlabs.io/creative-terms

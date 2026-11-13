@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=SkyPop
+Comment=Colourful rope-firing arcade action
+Exec=skypop
+Icon=${SNAP}/meta/gui/skypop.png
+Terminal=false
+Type=Application
+Categories=Game;ArcadeGame;
+StartupNotify=true

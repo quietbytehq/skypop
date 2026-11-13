@@ -1,0 +1,51 @@
+name: Verify Godot source
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.7.2
+        shell: pwsh
+        run: |
+          $platform = if ($IsWindows) { "win64.exe" } else { "linux.x86_64" }
+          $archive = "Godot_v4.7.2-stable_$platform.zip"
+          Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/4.7.2-stable/$archive" -OutFile "$env:RUNNER_TEMP/godot.zip"
+          Expand-Archive "$env:RUNNER_TEMP/godot.zip" "$env:RUNNER_TEMP/godot"
+          $pattern = if ($IsWindows) { '*console.exe' } else { '*.x86_64' }
+          $exe = Get-ChildItem "$env:RUNNER_TEMP/godot" -Filter $pattern | Select-Object -First 1
+          if (-not $IsWindows) { chmod +x $exe.FullName }
+          "GODOT=$($exe.FullName)" >> $env:GITHUB_ENV
+      - name: Import project
+        shell: pwsh
+        run: |
+          & $env:GODOT --headless --editor --path . --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test game rules and states
+        shell: pwsh
+        run: |
+          & $env:GODOT --headless --path . --script tests/test_game.gd
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Test packaged Windows game
+        if: runner.os == 'Windows' && github.event_name != 'pull_request'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $packageDir = "$env:RUNNER_TEMP/package"
+          New-Item -ItemType Directory -Force $packageDir | Out-Null
+          gh release download v1.0.0 --repo quietbytehq/skypop --pattern '*windows-x86_64.zip' --dir $packageDir
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $archive = Get-ChildItem $packageDir -Filter '*.zip' | Select-Object -First 1
+          Expand-Archive $archive.FullName "$packageDir/game"
+          $game = Get-ChildItem "$packageDir/game" -Filter SkyPop.exe -Recurse | Select-Object -First 1
+          $process = Start-Process -FilePath $game.FullName -ArgumentList '--headless','--quit-after','120' -Wait -PassThru -RedirectStandardOutput "$packageDir/stdout.log" -RedirectStandardError "$packageDir/stderr.log"
+          Get-Content "$packageDir/stdout.log"
+          Get-Content "$packageDir/stderr.log"
+          if ($process.ExitCode -ne 0) { exit $process.ExitCode }

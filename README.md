@@ -1,117 +1,60 @@
 # SkyPop
 
-A Pang-inspired arcade game written in Rust with macroquad.
+A colourful Pang-inspired arcade game for Linux and Windows, built with Godot.
 
-Dr. Demos has kidnapped Nina! Leo fights through ten stages of bouncing neon
-orbs, culminating in a boss battle against Dr. Demos and his hover-pod.
+![SkyPop title screen](docs/title.png)
 
-SkyPop runs on Linux and Windows. Its game art and sound effects are generated
-in code. Menu text uses the ProggyClean font bundled with macroquad.
+Dodge bouncing balls, fire ropes to split them into smaller targets, and clear ten increasingly fast stages. Choose three rope styles, collect weapon upgrades and health, and watch out for steel balls, bombs and fireballs. Features a fullscreen arcade title, gamepad support, stage celebrations, music controls and local high scores.
 
-## Playing
+![Gameplay](docs/playing.png)
 
-- **Orbs** come in four tiers: XL, L, M and S. Each tier always bounces to the
-  same height. Hit an orb and it splits into two orbs of the next tier, flying
-  apart. Hit an S orb and it's gone. Clear every orb to finish the stage.
-- **Weapons**
-  - *Harpoon*: fires one wire, which vanishes when it reaches the ceiling or
-    hits an orb.
-  - *Anchor wire*: sticks to the ceiling for a few seconds, popping any orb
-    that touches it.
-  - *Double wire*: lets you have two wires out at once.
-- **Drops** sometimes fall from popped orbs: Shield (absorbs one hit), Freeze,
-  Slow, Bonus score, plus pickups that switch your weapon.
-- **Platforms**: solid ones stop wires. Breakable glass shatters when a wire
-  hits it.
-- **Stage 10** is the boss. Hit the hover-pod with wires to wear it down; it
-  drops orbs faster as its health falls.
-- Clearing a stage unlocks it under *Stage Select*.
+## Download and play
 
-### Default controls
+Download a Linux or Windows package from [Releases](https://github.com/quietbytehq/skypop/releases). Extract the archive and launch `SkyPop` on Linux or `SkyPop.exe` on Windows. Linux users may need `chmod +x SkyPop`. The game starts in fullscreen; F11 toggles windowed mode.
 
-| Action     | Keyboard            | Gamepad            |
-|------------|---------------------|--------------------|
-| Move       | ← → / A D           | D-pad / left stick |
-| Fire       | Space / J           | A / X              |
-| Confirm    | Enter / Space       | A / Start          |
-| Back       | Esc / Backspace     | B                  |
-| Pause      | Esc / P             | Start              |
-| Fullscreen | F11                 |                    |
+Linux builds target x86_64 with glibc 2.28+ and OpenGL 3.3-compatible graphics. Windows builds target 64-bit Windows 10/11 with compatible graphics. Older systems and ARM are not currently supported or verified. Snap packages require a Linux distribution with snapd. A Snap package does not imply support for every Linux version.
 
-You can rebind every action under **Controls** on the title screen. Pick an
-action, then press the new key or gamepad button.
+## Controls
 
-## Building
+| Action | Keyboard / mouse | Gamepad |
+| --- | --- | --- |
+| Start | Any key / click | Any button |
+| Move | A/D or left/right arrows | Left stick |
+| Jump | W or up arrow | Left stick up |
+| Crouch | S or down arrow | Left stick down |
+| Fire rope | Space / left mouse | A / X |
+| Special | E / right mouse | Y |
+| Choose rope | 1/2/3, Q or mouse wheel | RB |
+| Pause | Escape | Start |
+| Settings / key bindings | F1 | Use keyboard |
+| Music on/off | M | Use title/settings controls |
+| Fullscreen | F11 | Use keyboard |
+| Title leaderboard | H / Tab | Use title controls |
 
-You need a stable Rust toolchain (1.89 or newer).
+If a Snap-installed gamepad is not detected, connect its device access with `sudo snap connect skypop:joystick`.
+
+Keyboard controls can be remapped in settings. High scores, settings and bindings are saved locally; there are no accounts or online services.
+
+## Build from source
+
+Install [Godot 4.7.2](https://godotengine.org/download/) and matching export templates. Open `project.godot` in Godot or run:
 
 ```sh
-cargo run --release
+godot --editor --path .
+godot --path .
+mkdir -p build
+godot --headless --path . --export-release "SKYPOP Linux Desktop" build/SkyPop
+godot --headless --path . --export-release "SKYPOP Windows Desktop" build/SkyPop.exe
 ```
 
-On Linux, install the development packages for ALSA and udev first (for
-audio and gamepads), e.g. on Debian/Ubuntu:
+The source checkout runs silently. Licensed audio is bundled only in downloadable games; see [audio instructions](assets/audio/README.md) to supply your own. This is the Godot version of SkyPop. The earlier v0.1.0 Rust/macroquad prototype is legacy and differs from this game.
 
-```sh
-sudo apt install pkg-config libasound2-dev libudev-dev libx11-dev libxi-dev libgl1-mesa-dev
-```
+Run the regression suite with `godot --headless --path . --script tests/test_game.gd`. Audio checks run when local audio is present.
 
-On Windows, use the Rust MSVC toolchain with the Visual Studio C++ Build Tools.
+Build a local Snap with `tools/build-snap.sh` (Snapcraft and LXD required). Bundled media means the complete Snap is marked proprietary in Store metadata; its source code remains Apache-2.0.
 
-Run the tests with `cargo test`.
+## Licence and contact
 
-## Saves
+Source code: [Apache-2.0](LICENSE). Fonts, Godot components, artwork and bundled audio have separate notices in [NOTICE](NOTICE) and [LICENSES](LICENSES). The code licence does not grant unrestricted rights to all media.
 
-High scores, unlocked stages, key bindings and the fullscreen setting are
-stored in `save.ron` in the OS config directory:
-
-- Linux: `$XDG_CONFIG_HOME/skypop/` (usually `~/.config/skypop/`)
-- Windows: `%APPDATA%\QuietByte\SkyPop\config\`
-
-Delete the file to reset everything.
-
-## Level data
-
-Stages are defined in [`data/levels/`](data/levels) as RON files: orbs,
-platforms, weapon, drop table, speed, timer, theme and boss settings. They are
-embedded into the binary at build time. To try edits without rebuilding,
-point `SKYPOP_DATA_DIR` at a directory that contains `levels/levelNN.ron`
-files. Any file found there replaces the built-in stage with the same number.
-
-```sh
-SKYPOP_DATA_DIR=./data cargo run
-```
-
-## Project layout
-
-```
-src/
-  main.rs          window setup, letterboxed 1280×720 camera, main loop
-  app.rs           screen state machine (menus, cutscenes, play, overlays)
-  sim/             deterministic fixed-step simulation (no rendering, no I/O)
-  input.rs         keyboard/gamepad, rebinding, InputSource abstraction
-  render/          procedural drawing: scene, characters, headline font, effects
-  audio.rs         synthesised sound effects
-  save.rs          persistent data in the OS config directory
-data/levels/       stage definitions (RON)
-docs/              design notes
-```
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the simulation,
-rendering and the upcoming LAN co-op fit together.
-
-## Roadmap
-
-- **Milestone 1** (this release): the single-player game, all ten stages, the
-  boss, cutscenes, saves and rebinding.
-- **Milestone 2**: two-player co-op over a local network (two PCs). Host and
-  join lobby, discovery by UDP broadcast with manual IP entry as a fallback,
-  and a host-authoritative simulation with client-side interpolation.
-
-## License
-
-Licensed under the [Apache License, Version 2.0](LICENSE).
-
-See [NOTICE](NOTICE) for attribution.
-
-Contact [hello@quietbytehq.uk](mailto:hello@quietbytehq.uk).
+QuietByte · [hello@quietbytehq.uk](mailto:hello@quietbytehq.uk)
