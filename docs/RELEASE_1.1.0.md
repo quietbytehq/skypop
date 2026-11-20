@@ -15,9 +15,9 @@ The optional Adventure global top 100 accepts scores from 1,000 to 1,000,000 in 
 - Linux x86-64 and Windows x86-64 exports succeeded. The Linux release executable passed a headless startup smoke check. Windows execution has not been tested on Windows. No new Snap was published or installed; its network permission is prepared in the recipe.
 - Some audio-loaded Godot tests and forced startup exits report ObjectDB/resource references at shutdown. Assertions pass; these are reported rather than counted as clean teardown.
 
-## Not performed yet
+## Live verification after user deployment
 
-No GitHub push, Cloudflare login, D1 remote creation, Worker deployment, public-subdomain lookup, live score submission, live moderation test or live game submission has been performed. The user runs login/push/deploy. After first deployment, run `leaderboard/verify_live.py --deployed`, then finish a qualifying run in the new game and remove its test entry through the private admin page.
+The user confirmed deployment completed. On 20 November 2026, the verification script posted one temporary score, confirmed public top-100 appearance, removed it through private admin and confirmed an empty board. A second test invoked SkyPop’s actual game submission code over HTTPS with isolated player data; its 2,000-point test appeared publicly and exactly one stored submission was confirmed. That entry was removed through admin and the board was confirmed empty again. No existing player scores were deleted. No admin key was printed. The game test injected a qualifying result through the normal name-entry/submission path; it was not a manual ten-world playthrough. The verification script now uses an explicit release-check User-Agent after its initial default-agent request was rejected.
 
 The production key and IP salt are generated only by the deploy script, stored in Worker secrets, and saved with private permissions outside the repository. Local tests use disposable random test values only. Build outputs, licensed MP3 files, dependencies, caches and private configuration are ignored.
 
@@ -25,4 +25,4 @@ The production key and IP salt are generated only by the deploy script, stored i
 
 Fake scores remain possible. The public endpoint accepts self-reported scores and has no client secret or proof of play. Range/increment validation, name filtering, salted address limits and moderation deter junk; they do not authenticate players or stop an attacker changing addresses. People sharing an address share the limit; people sharing a name share a ranking. No play-time or level-reached plausibility check was added.
 
-Deploy the scoreboard and complete the pending live checks before publishing or installing this update for general play. See `leaderboard/README.md` for the two-command deployment flow and private admin-file location.
+The scoreboard deployment and live submission/removal checks are complete. This agent has not pushed the follow-up validation commit or published/installed the 1.1.0 game packages. See `leaderboard/README.md` for the two-command deployment flow and private admin-file location.

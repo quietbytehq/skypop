@@ -8,7 +8,7 @@ site='https://skypop.quietbytehq.uk'
 admin=pathlib.Path.home()/'.config/skypop-scores-admin.txt'
 key=urllib.parse.parse_qs(urllib.parse.urlparse(admin.read_text().strip()).query)['key'][0]
 def call(route,body=None):
-    req=urllib.request.Request(site+route,data=None if body is None else json.dumps(body).encode(),headers={'Content-Type':'application/json'})
+    req=urllib.request.Request(site+route,data=None if body is None else json.dumps(body).encode(),headers={'Content-Type':'application/json','User-Agent':'SkyPop-Release-Check/1.1.0'})
     with urllib.request.urlopen(req,timeout=15) as response:return json.load(response)
 name='QA'+secrets.token_hex(4).upper()
 try:

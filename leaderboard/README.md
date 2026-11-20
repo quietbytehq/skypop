@@ -33,7 +33,7 @@ cd /path/to/skypop/leaderboard
 python3 verify_live.py --deployed
 ```
 
-This explicitly opts into the first public-domain request. It posts one temporary QA score, confirms storage and public appearance when it ranks, deletes only that submission through admin, then checks removal. On a fresh deployment the board must end empty. It never clears genuine players' entries. After this, run the new game, finish a qualifying run, enter a test name with online posting enabled, confirm it appears, and remove that specific test through admin. A name outside the top 100 can still be seen in the private recent-entry list. Live checks have not been performed before deployment.
+This explicitly opts into the first public-domain request. It posts one temporary QA score, confirms storage and public appearance when it ranks, deletes only that submission through admin, then checks removal. On a fresh deployment the board must end empty. It never clears genuine players' entries. After this, run the new game, finish a qualifying run, enter a test name with online posting enabled, confirm it appears, and remove that specific test through admin. A name outside the top 100 can still be seen in the private recent-entry list. Live checks were performed after the user confirmed deployment on 20 November 2026; both the scripted score and actual game-code score appeared and were removed, leaving the board empty.
 
 ## API and abuse controls
 
