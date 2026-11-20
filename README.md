@@ -31,7 +31,7 @@ sudo snap install skypop
 | Fire rope | Space / left mouse | A / X |
 | Special | E / right mouse | Y |
 | Choose rope | 1/2/3, Q or mouse wheel | RB |
-| Pause | Escape | Start |
+| Pause / Resume / Quit to desktop | Escape; arrows + Enter, or click | Start; D-pad + A; B resumes |
 | Settings / key bindings | F1 | Use keyboard |
 | Music on/off | M | Use title/settings controls |
 | Fullscreen | F11 | Use keyboard |

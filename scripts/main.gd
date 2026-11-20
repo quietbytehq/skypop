@@ -90,6 +90,8 @@ var name_entry := ""
 var finish_message := ""
 var settings_open := false
 var paused := false
+var pause_choice := 0
+signal desktop_quit_requested
 var pop_effects: Array[Dictionary] = []
 var settings_cursor := 0
 var remapping_action := ""
@@ -1017,6 +1019,10 @@ func _submit_score() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if paused:
+		_handle_pause_input(event)
+		get_viewport().set_input_as_handled()
+		return
 	if game_state == "story":
 		if event is InputEventKey and event.pressed and not event.echo:
 			if event.keycode == KEY_M:
@@ -1050,8 +1056,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				wire_type = key_event.keycode - KEY_1
 			elif key_event.keycode == KEY_Q:
 				wire_type = (wire_type + 1) % 3
-		if key_event.keycode == KEY_ESCAPE and game_state in ["playing", "celebrating", "fainting"] and not settings_open:
-			paused = not paused
+		if key_event.keycode == KEY_ESCAPE and game_state in ["playing", "celebrating", "fainting", "title", "name_entry", "leaderboard"] and not settings_open:
+			paused = true
+			pause_choice = 0
 			queue_redraw()
 			return
 		if key_event.keycode == KEY_F1 and (game_state == "playing" or game_state == "title"):
@@ -1097,7 +1104,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_continue_stage()
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT and Rect2(1100, 65, 150, 30).has_point(event.position) and game_state == "playing" and not settings_open:
-			paused = not paused
+			paused = true
+			pause_choice = 0
 			return
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and game_state == "playing" and not settings_open and not paused:
 			wire_type = (wire_type + 1) % 3
@@ -1132,8 +1140,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif event.button_index in [JOY_BUTTON_A, JOY_BUTTON_START]:
 				_submit_score()
 			return
-		if event.button_index == JOY_BUTTON_START and game_state in ["playing", "celebrating", "fainting"] and not settings_open:
-			paused = not paused
+		if event.button_index == JOY_BUTTON_START and game_state in ["playing", "celebrating", "fainting", "title", "name_entry", "leaderboard"] and not settings_open:
+			paused = true
+			pause_choice = 0
 			return
 		if event.button_index == JOY_BUTTON_A and game_state == "celebrating" and not paused:
 			_continue_stage()
@@ -1264,6 +1273,8 @@ func _draw() -> void:
 		_draw_title()
 		if settings_open:
 			_draw_settings()
+		if paused:
+			_draw_pause_menu()
 		return
 	_draw_background()
 	_draw_weather()
@@ -1288,8 +1299,7 @@ func _draw() -> void:
 	if game_state == "celebrating":
 		_draw_celebration()
 	if paused:
-		draw_rect(Rect2(0, 0, 1280, 720), Color(0.02, 0.04, 0.1, 0.7))
-		_draw_fancy_text("PAUSED · ESC TO RESUME", Vector2(0, 360), 1280, 36, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		_draw_pause_menu()
 	if settings_open:
 		_draw_settings()
 
@@ -2002,3 +2012,60 @@ func _draw_story() -> void:
 		draw_circle(Vector2(590+i*26,608),5,Color("ffe394") if i==story_page else Color("43556f"))
 	_hud_text("ENTER / SPACE / A / CLICK: " + ("FINISH" if story_page==2 else "NEXT"),Vector2(63,678),19,Color.WHITE)
 	_hud_text("ESC / B: SKIP",Vector2(1050,678),17,Color("d9eafa"))
+
+
+func _handle_pause_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_ESCAPE:
+			paused = false
+		elif event.keycode in [KEY_UP, KEY_DOWN, KEY_TAB]:
+			pause_choice = 1 - pause_choice
+		elif event.keycode in [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE]:
+			_activate_pause_choice()
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if Rect2(405,315,470,62).has_point(event.position):
+			paused = false
+		elif Rect2(405,395,470,62).has_point(event.position):
+			_quit_to_desktop()
+	elif event is InputEventJoypadButton and event.pressed:
+		if event.button_index in [JOY_BUTTON_START, JOY_BUTTON_B]:
+			paused = false
+		elif event.button_index in [JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_DOWN]:
+			pause_choice = 1 - pause_choice
+		elif event.button_index == JOY_BUTTON_A:
+			_activate_pause_choice()
+	queue_redraw()
+
+
+func _activate_pause_choice() -> void:
+	if pause_choice == 0:
+		paused = false
+	else:
+		_quit_to_desktop()
+
+
+func _quit_to_desktop() -> void:
+	desktop_quit_requested.emit()
+	music_player.stop()
+	get_tree().quit()
+
+
+func _draw_pause_menu() -> void:
+	draw_rect(Rect2(0,0,1280,720),Color(0.015,0.025,0.06,0.82))
+	_draw_glass_panel(Rect2(345,200,590,340),Color("7deaff"))
+	_draw_fancy_text("PAUSED",Vector2(365,264),550,40,Color("ffe3a1"),HORIZONTAL_ALIGNMENT_CENTER)
+	for i in range(2):
+		var box := Rect2(405,315+i*80,470,62)
+		var selected := pause_choice == i
+		draw_style_box(_pause_button_style(selected),box)
+		_draw_fancy_text("RESUME PLAY" if i == 0 else "QUIT TO DESKTOP",Vector2(box.position.x,box.position.y+40),box.size.x,24,Color.WHITE,HORIZONTAL_ALIGNMENT_CENTER)
+	_hud_text("ESC / B: RESUME    ↑ ↓ / D-PAD: CHOOSE    ENTER / A: SELECT",Vector2(382,505),13,Color("bbd5ec"))
+
+
+func _pause_button_style(selected: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("284560") if selected else Color("15283f")
+	style.border_color = Color("ffe3a1") if selected else Color("467487")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(10)
+	return style

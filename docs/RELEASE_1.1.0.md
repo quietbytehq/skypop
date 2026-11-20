@@ -26,3 +26,7 @@ The production key and IP salt are generated only by the deploy script, stored i
 Fake scores remain possible. The public endpoint accepts self-reported scores and has no client secret or proof of play. Range/increment validation, name filtering, salted address limits and moderation deter junk; they do not authenticate players or stop an attacker changing addresses. People sharing an address share the limit; people sharing a name share a ranking. No play-time or level-reached plausibility check was added.
 
 The scoreboard deployment and live submission/removal checks are complete. This agent has not pushed the follow-up validation commit or published/installed the 1.1.0 game packages. See `leaderboard/README.md` for the two-command deployment flow and private admin-file location.
+
+## Local pause-menu update
+
+The pause overlay now has Resume play and Quit to desktop. Escape opens it from the title, gameplay, celebrations, defeat/name entry and local leaderboard; Escape/B resumes. Keyboard arrows/Enter, mouse buttons and controller D-pad/A select actions. Story Escape remains Skip. Native viewport tests passed 13/13, including actual process exit and frozen gameplay. The existing audio-loaded game suite passed 43,484 assertions. The local Linux export and Snap were rebuilt; the Snap reuses the installed 1.0.0 package runtime and replaces the game executable, version and network permission. This avoids the session’s blocked Snapcraft sandbox. It is a local unsigned build, not a Store release.
