@@ -1,0 +1,12 @@
+name = "skypop-scores"
+main = "src/worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = false
+routes = [{ pattern = "skypop.quietbytehq.uk", custom_domain = true }]
+[vars]
+MIN_SCORE = "1000"
+MAX_SCORE = "1000000"
+[[d1_databases]]
+binding = "DB"
+database_name = "skypop-scores"
+database_id = "00000000-0000-0000-0000-000000000000"

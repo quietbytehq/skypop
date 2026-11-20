@@ -91,3 +91,13 @@ func save_music_enabled(enabled: bool) -> Error:
 	var config := _load_config()
 	config.set_value(SETTINGS_SECTION, "music_enabled", enabled)
 	return config.save(SAVE_PATH)
+
+
+func get_online_enabled() -> bool:
+	return bool(_load_config().get_value(SETTINGS_SECTION, "online_scores", true))
+
+
+func save_online_enabled(enabled: bool) -> Error:
+	var config := _load_config()
+	config.set_value(SETTINGS_SECTION, "online_scores", enabled)
+	return config.save(SAVE_PATH)

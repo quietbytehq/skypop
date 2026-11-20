@@ -25,3 +25,7 @@ assets/audio/*.wav
 *~
 .DS_Store
 Thumbs.db
+
+node_modules/
+.dev.vars*
+.wrangler/

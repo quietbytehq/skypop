@@ -30,7 +30,9 @@ func run_tests():
 	start_key.pressed = true
 	start_key.keycode = KEY_B
 	game._unhandled_input(start_key)
-	check(game.game_state == "playing", "Arbitrary keyboard key starts game")
+	check(game.game_state == "story", "Arbitrary keyboard key opens story")
+	game._finish_story()
+	check(game.game_state == "playing", "Skipping opening starts game")
 	if has_audio:
 		check(game.music_player.stream.resource_path.ends_with("/music.mp3"), "Gameplay track replaces title music on start")
 	check(game.start_fire_blocked, "Starting input cannot immediately fire")
@@ -40,6 +42,7 @@ func run_tests():
 	game.game_state = "title"
 	Input.action_press("fire")
 	game._begin_game()
+	game._finish_story()
 	game._update_player(1.0 / 120.0)
 	check(game.projectiles.is_empty(), "Held start key does not shoot on entering stage")
 	Input.action_release("fire")
@@ -181,7 +184,9 @@ func run_tests():
 		game.celebration_time = 2
 		game._continue_stage()
 		check(game.stage == mini(stage + 1, 10), "Stage progression")
-	check(game.game_state == "name_entry" and game.run_won, "Victory name entry")
+	check(game.game_state == "story" and game.story_ending, "Ten cleared worlds open ending")
+	game._finish_story()
+	check(game.game_state == "name_entry" and game.run_won, "Victory name entry after ending")
 	game._start_stage(1)
 	game.continues = 0
 	game.hearts = 1

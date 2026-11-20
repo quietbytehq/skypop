@@ -1,13 +1,15 @@
 name: skypop
 title: SkyPop
 base: core24
-version: '1.0.0'
+version: '1.1.0'
 summary: Colourful rope-firing arcade action across ten stages
 description: |
   Dodge bouncing balls, fire ropes to split them, and clear ten increasingly
   fast stages. Collect health, shields and weapon upgrades while avoiding
   steel balls, bombs and fireballs. Includes fullscreen play, local high
   scores, controller support and adjustable music and effects.
+  A skippable story frames the ten-world adventure. Optional global scores
+  post your chosen name and run score; a remembered local-only setting is available.
   Source code is available under Apache-2.0; bundled media has separate terms.
 grade: stable
 confinement: strict
@@ -23,7 +25,7 @@ apps:
   skypop:
     command: bin/launch-skypop
     extensions: [gnome]
-    plugs: [audio-playback, joystick]
+    plugs: [audio-playback, joystick, network]
 parts:
   skypop:
     plugin: dump

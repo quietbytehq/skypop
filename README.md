@@ -4,7 +4,7 @@ A colourful Pang-inspired arcade game for Linux and Windows, built with Godot.
 
 ![SkyPop title screen](docs/title.png)
 
-Dodge bouncing balls, fire ropes to split them into smaller targets, and clear ten increasingly fast stages. Choose three rope styles, collect weapon upgrades and health, and watch out for steel balls, bombs and fireballs. Features a fullscreen arcade title, gamepad support, stage celebrations, music controls and local high scores.
+Dodge bouncing balls, fire ropes to split them into smaller targets, and clear ten increasingly fast stages. Choose three rope styles, collect weapon upgrades and health, and watch out for steel balls, bombs and fireballs. Features a fullscreen arcade title, gamepad support, stage celebrations, music controls local high scores, and a skippable opening/ending story.
 
 ![Gameplay](docs/playing.png)
 
@@ -39,7 +39,11 @@ sudo snap install skypop
 
 If a Snap-installed gamepad is not detected, connect its device access with `sudo snap connect skypop:joystick`.
 
-Keyboard controls can be remapped in settings. High scores, settings and bindings are saved locally; there are no accounts or online services.
+Keyboard controls can be remapped in settings. High scores, settings and bindings are saved locally. The optional global Adventure top 100 accepts scores of 1,000 or more. Name entry explains posting and its destination; F2, gamepad X or the privacy control switches to local-only and remembers that choice. Only the typed name, score, mode and version are posted. Failed/offline posts are dropped without delaying play. Names are not accounts and scores are self-reported, not verified. Fake scores remain possible.
+
+The story, **The Shattered Sky**, follows the explorer restoring a crystal across ten worlds. Enter/Space/A/click advances its three opening cards and three victory cards; Escape/B skips. Existing stage celebrations continue between worlds. The ending rewards clearing all ten worlds with the restored crystal, hero portrait and final score.
+
+The service is prepared under [leaderboard/](leaderboard/README.md) for a user-run Cloudflare deployment at `skypop.quietbytehq.uk`. Do not query that hostname before first deployment. Deploy the service and finish live checks before publishing the new game packages. No Cloudflare login, deployment or GitHub push is performed by the preparation steps.
 
 ## Build from source
 
@@ -55,7 +59,15 @@ godot --headless --path . --export-release "SKYPOP Windows Desktop" build/SkyPop
 
 The source checkout runs silently. Licensed audio is bundled only in downloadable games; see [audio instructions](assets/audio/README.md) to supply your own. This is the Godot version of SkyPop. The earlier v0.1.0 Rust/macroquad prototype is legacy and differs from this game.
 
-Run the regression suite with `godot --headless --path . --script tests/test_game.gd`. Audio checks run when local audio is present.
+Run tests with isolated user data so real player scores are not modified:
+
+```sh
+XDG_DATA_HOME=/tmp/skypop-tests XDG_CONFIG_HOME=/tmp/skypop-test-config godot --headless --path . --script tests/test_game.gd
+XDG_DATA_HOME=/tmp/skypop-online-tests XDG_CONFIG_HOME=/tmp/skypop-test-config godot --headless --path . --script tests/test_story_online.gd
+cd leaderboard && npm ci && npm test
+```
+
+The story/online suite captures the game's real HTTP request on localhost and tests offline cleanup. It never queries the public hostname. Audio checks run when local licensed audio is present. See [release validation](docs/RELEASE_1.1.0.md) for the tested scope.
 
 Build a local Snap with `tools/build-snap.sh` (Snapcraft and LXD required). Bundled media means the complete Snap is marked proprietary in Store metadata; its source code remains Apache-2.0.
 

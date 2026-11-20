@@ -1,0 +1,1 @@
+{"name":"skypop-scores","private":true,"type":"module","scripts":{"dev":"wrangler dev --local","test":"node --test tests/worker.test.mjs","deploy":"bash deploy.sh"},"devDependencies":{"wrangler":"4.165.0"}}

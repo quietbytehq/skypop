@@ -1,5 +1,12 @@
 extends Node2D
 
+const OnlineScores = preload("res://scripts/online.gd")
+var online_enabled := true
+var story_page := 0
+var story_time := 0.0
+var story_ending := false
+var online_endpoint := OnlineScores.URL
+
 const PLAYER_FOOT_Y := 610.0
 const HURT_DURATION := 1.15
 const COLLAPSE_CELL_SIZE := 92.0
@@ -110,6 +117,7 @@ var music_player: AudioStreamPlayer
 
 func _ready() -> void:
 	rng.randomize()
+	online_enabled = SaveGame.get_online_enabled()
 	logo_font = load("res://assets/fonts/LilitaOne-Regular.ttf")
 	body_font = load("res://assets/fonts/Lato-Semibold.ttf")
 	score_font = load("res://assets/fonts/Lato-Bold.ttf")
@@ -203,6 +211,7 @@ func _trim_frame(texture: Texture2D) -> Texture2D:
 		bottom -= 1
 	used.size.y = bottom - used.position.y + 1
 	var cropped := AtlasTexture.new()
+	cropped.filter_clip = true
 	cropped.atlas = texture
 	cropped.region = Rect2(used)
 	return cropped
@@ -238,9 +247,9 @@ func _load_sounds() -> void:
 
 func _load_music() -> void:
 	var track := "music"
-	if game_state == "title":
+	if game_state == "title" or game_state == "story" and not story_ending:
 		track = "title_music"
-	elif game_state == "celebrating" or (game_state == "name_entry" and run_won):
+	elif game_state == "celebrating" or (game_state == "name_entry" and run_won) or (game_state == "story" and story_ending):
 		track = "happy_music"
 	elif game_state == "name_entry":
 		track = "sad_music"
@@ -382,6 +391,8 @@ func _start_stage(stage_number: int) -> void:
 
 
 func _process(delta: float) -> void:
+	if game_state == "story":
+		story_time += delta
 	if game_state == "title":
 		title_time += delta
 	elif game_state == "name_entry" and not paused:
@@ -975,7 +986,7 @@ func _continue_stage() -> void:
 	if game_state != "celebrating" or celebration_time < 1.5:
 		return
 	if stage == MAX_STAGE:
-		_finish_run("All 10 stages cleared!", true)
+		_start_story(true)
 	else:
 		_start_stage(stage + 1)
 		SaveGame.save_progress(stage, {"score": score, "continues": continues})
@@ -993,15 +1004,39 @@ func _finish_run(message: String, won: bool = false) -> void:
 
 
 func _submit_score() -> void:
-	var player_name := name_entry.strip_edges().to_upper()
+	if game_state != "name_entry":
+		return
+	var player_name := OnlineScores.clean_name(name_entry)
 	if player_name.is_empty():
 		player_name = "PLAYER"
 	SaveGame.add_high_score(player_name.left(12), score)
 	leaderboard_entries = SaveGame.get_high_scores()
 	game_state = "leaderboard"
+	if online_enabled:
+		OnlineScores.submit(self, player_name, score, online_endpoint)
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if game_state == "story":
+		if event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode == KEY_M:
+				_toggle_music()
+			elif event.keycode == KEY_ESCAPE:
+				_finish_story()
+			elif event.keycode in [KEY_ENTER, KEY_SPACE, KEY_KP_ENTER]:
+				_advance_story()
+		elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			if Rect2(1040, 647, 190, 48).has_point(event.position):
+				_finish_story()
+			else:
+				_advance_story()
+		elif event is InputEventJoypadButton and event.pressed:
+			if event.button_index == JOY_BUTTON_B:
+				_finish_story()
+			elif event.button_index in [JOY_BUTTON_A, JOY_BUTTON_START]:
+				_advance_story()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var key_event := event as InputEventKey
 		if game_state == "celebrating" and key_event.keycode == KEY_ENTER and not paused:
@@ -1031,12 +1066,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			queue_redraw()
 			return
 		if game_state == "name_entry":
-			if key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER:
+			if key_event.keycode == KEY_F2:
+				_toggle_online()
+			elif key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER:
 				_submit_score()
 			elif key_event.keycode == KEY_BACKSPACE:
 				name_entry = name_entry.left(maxi(name_entry.length() - 1, 0))
 			elif key_event.unicode >= 32 and key_event.unicode <= 126 and name_entry.length() < 12:
-				name_entry += char(key_event.unicode).to_upper()
+				name_entry += char(key_event.unicode).to_upper() if char(key_event.unicode).to_upper() in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ._-" else ""
 			queue_redraw()
 			return
 		if game_state == "title":
@@ -1070,7 +1107,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			queue_redraw()
 			return
 		if game_state == "name_entry" and event.button_index == MOUSE_BUTTON_LEFT:
-			_submit_score()
+			if Rect2(565, 542, 550, 42).has_point(event.position):
+				_toggle_online()
+			elif Rect2(565, 475, 550, 55).has_point(event.position):
+				_submit_score()
 		elif game_state == "title" and event.button_index == MOUSE_BUTTON_LEFT:
 			if Rect2(64, 611, 160, 44).has_point(event.position):
 				settings_open = true
@@ -1086,6 +1126,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif game_state == "playing" and not paused and not settings_open and event.button_index == MOUSE_BUTTON_RIGHT:
 			_use_special()
 	if event is InputEventJoypadButton and event.pressed:
+		if game_state == "name_entry":
+			if event.button_index == JOY_BUTTON_X:
+				_toggle_online()
+			elif event.button_index in [JOY_BUTTON_A, JOY_BUTTON_START]:
+				_submit_score()
+			return
 		if event.button_index == JOY_BUTTON_START and game_state in ["playing", "celebrating", "fainting"] and not settings_open:
 			paused = not paused
 			return
@@ -1211,6 +1257,9 @@ func _is_night() -> bool:
 
 
 func _draw() -> void:
+	if game_state == "story":
+		_draw_story()
+		return
 	if game_state == "title":
 		_draw_title()
 		if settings_open:
@@ -1718,22 +1767,24 @@ func _draw_name_entry() -> void:
 	_draw_reaction_portrait(Rect2(175,185,370,370), run_won, outcome_time)
 	_hud_text("AN ADVENTURE TO REMEMBER" if run_won else "EVEN HEROES NEED A REST", Vector2(185,563), 13, Color("bed5e6"))
 	_hud_text("YOU DID IT!" if run_won else "GAME OVER", Vector2(585,235), 34, Color("ffe09c") if run_won else Color("c3d9ef"))
-	_hud_text("ALL TEN WORLDS CLEARED" if run_won else "NO CONTINUES LEFT", Vector2(588,279), 17, Color("a9c5de"))
+	_hud_text("GUARDIAN OF THE SKIES" if run_won else "THE LIGHT IS STILL OUT THERE.", Vector2(588,279), 17, Color("a9c5de"))
 	_hud_text("FINAL SCORE  %07d" % score, Vector2(587,335), 24, Color("fff1c0"))
 	_hud_text("ENTER YOUR NAME", Vector2(588,395), 15, Color("bcd8ef"))
 	var entry := name_entry if not name_entry.is_empty() else "TYPE NAME"
 	_hud_text(entry + "_", Vector2(585,440), 29, Color("ffe394"))
-	_hud_text("ENTER TO SAVE YOUR SCORE", Vector2(588,502), 15, Color("c3d7e8"))
+	_hud_text("ENTER / A / CLICK TO SAVE", Vector2(588,502), 15, Color("c3d7e8"))
+	var privacy := "LOCAL ONLY · F2 / X / CLICK TO CHANGE"
+	if online_enabled:
+		privacy = "POST ONLINE · F2 / X / CLICK: LOCAL ONLY" if OnlineScores.qualifying(score) else "BELOW 1,000 · LOCAL SCORE ONLY · F2 / X: SETTING"
+	_hud_text(privacy, Vector2(575,566), 13, Color("ffe394"))
+	_hud_text("Online: name, score, mode + version → " + OnlineScores.SITE, Vector2(175,625), 16, Color("c3d7e8"))
+	_hud_text("Self-reported scores. No internet? Play continues; no retry queue.", Vector2(175,650), 15, Color("a9c5de"))
 
 
 func _begin_game() -> void:
 	if game_state != "title" or settings_open:
 		return
-	game_state = "playing"
-	start_fire_blocked = true
-	if _audio_asset("title_music") != null:
-		_load_music()
-	_play_sound("pickup")
+	_start_story(false)
 
 
 func _title_prompt_visible() -> bool:
@@ -1850,3 +1901,104 @@ func _exit_tree() -> void:
 	if is_instance_valid(audio_player):
 		audio_player.stop()
 		audio_player.stream = null
+
+
+func _toggle_online() -> void:
+	online_enabled = not online_enabled
+	SaveGame.save_online_enabled(online_enabled)
+	queue_redraw()
+
+
+func _start_story(ending: bool) -> void:
+	story_ending = ending
+	story_page = 0
+	story_time = 0.0
+	game_state = "story"
+	paused = false
+	projectiles.clear()
+	_load_music()
+
+
+func _advance_story() -> void:
+	# Avoid a held start key or a double-click skipping several cards.
+	if story_time < 0.35:
+		return
+	if story_page < 2:
+		story_page += 1
+		story_time = 0.0
+		if story_ending and story_page == 2:
+			_play_sound("voice_alright")
+	else:
+		_finish_story()
+
+
+func _finish_story() -> void:
+	if game_state != "story":
+		return
+	if story_ending:
+		_finish_run("The Sky Crystal shines again!", true)
+	else:
+		_reset_run()
+		start_fire_blocked = true
+		_play_sound("pickup")
+
+
+func _draw_story() -> void:
+	var opening_titles := ["THE SHATTERED SKY", "TEN WORLDS. ONE PROMISE.", "EVERY POP BRINGS HOPE."]
+	var ending_titles := ["THE LAST LIGHT", "A WORLD WORTH SAVING", "GUARDIAN OF THE SKIES"]
+	var opening_lines := [
+		["For generations, the Sky Crystal watched over our world.", "Then a strange storm shattered its light...", "and sealed the fragments inside wild, bouncing spheres."],
+		["From ancient sands to the quiet face of the Moon,", "ten worlds now wait beneath a restless sky.", "One explorer picks up a rope launcher and makes a promise."],
+		["Split the spheres. Recover the light. Bring it home.", "You don't need to be fearless to be a hero.", "You just need to take the first shot."]]
+	var ending_lines := [
+		["On the Moon, the final sphere falls silent.", "Ten scattered lights rise together...", "and the Sky Crystal becomes whole once more."],
+		["Across deserts, cities and snow, the storm finally fades.", "The light returns to every place you fought to protect.", "Tonight, every world has a reason to celebrate."],
+		["You brought the light home.", "Ten worlds saved. One adventure to remember.", "ALRIGHT!  The sky is yours again."]]
+	var background_stage: int = [1, 10, 2][story_page] if not story_ending else [10, 2, 6][story_page]
+	draw_rect(Rect2(0,0,1280,720), Color("08152c"))
+	if stage_backgrounds.has(background_stage):
+		draw_texture_rect(stage_backgrounds[background_stage], Rect2(0,0,1280,720), false, Color(0.7,0.8,0.95))
+	draw_rect(Rect2(0,0,1280,720), Color(0.015,0.035,0.09,0.45))
+	_draw_glass_panel(Rect2(40,32,1200,600), Color("7deaff") if not story_ending else Color("ffd071"))
+	if stage_backgrounds.has(background_stage):
+		draw_texture_rect(stage_backgrounds[background_stage], Rect2(44,36,1192,592), false, Color(0.62,0.72,0.86))
+	draw_rect(Rect2(44,36,1192,592),Color(0.02,0.045,0.1,0.52))
+	draw_rect(Rect2(447,160,768,438),Color(0.025,0.055,0.12,0.79))
+	_hud_text("SKYPOP  /  " + ("THE HOMECOMING" if story_ending else "THE SHATTERED SKY"),Vector2(74,75),18,Color("9be8ff"))
+	_hud_text(ending_titles[story_page] if story_ending else opening_titles[story_page],Vector2(74,132),36,Color("ffe3a1"))
+	# Existing world paintings and original character portraits form each illustrated scene.
+	if story_ending and story_page == 2:
+		_draw_reaction_portrait(Rect2(74,165,365,365),true,story_time)
+	else:
+		var hero: Texture2D = player_costumes[0]
+		var hero_size := _character_size(hero, 340.0)
+		draw_texture_rect(hero,Rect2(Vector2(200-hero_size.x/2,200),hero_size),false)
+	var center := Vector2(810,290)
+	var assembled := story_ending
+	for i in range(10):
+		var angle := i * TAU / 10.0 - PI/2
+		var orbit := 115.0 if not assembled else lerpf(115.0,18.0,clampf(story_time/2.2,0.0,1.0))
+		var at := center + Vector2(cos(angle),sin(angle))*orbit
+		at.y += sin(story_time*1.7+i)*5.0
+		var tint := Color.from_hsv(float(i)/10.0,0.45,1.0)
+		draw_circle(at,19,Color(tint,0.12))
+		draw_colored_polygon(PackedVector2Array([at+Vector2(0,-15),at+Vector2(10,0),at+Vector2(0,18),at+Vector2(-10,0)]),tint)
+		draw_line(at+Vector2(0,-12),at+Vector2(-7,0),Color.WHITE,2,true)
+	if assembled:
+		var glow := clampf(story_time/2.2,0.0,1.0)
+		draw_circle(center,76,Color(0.45,0.85,1.0,glow*0.12))
+		var points := PackedVector2Array([center+Vector2(0,-83),center+Vector2(54,-16),center+Vector2(34,48),center+Vector2(0,85),center+Vector2(-34,48),center+Vector2(-54,-16)])
+		draw_colored_polygon(points,Color(0.45,0.91,1,glow))
+		draw_colored_polygon(PackedVector2Array([points[0],points[1],center,points[5]]),Color(0.88,1,1,glow))
+		draw_colored_polygon(PackedVector2Array([center,points[1],points[2],points[3]]),Color(0.27,0.57,0.95,glow))
+		draw_line(points[0],points[3],Color(1,1,1,glow*0.8),2,true)
+		draw_arc(center,150+sin(story_time)*5,0,TAU,80,Color(0.65,0.94,1,0.45),2,true)
+	var lines: Array = ending_lines[story_page] if story_ending else opening_lines[story_page]
+	for i in range(lines.size()):
+		_hud_text(lines[i],Vector2(465,448+i*35),20,Color("edf5ff"))
+	if story_ending and story_page == 2:
+		_hud_text("FINAL SCORE  %07d" % score,Vector2(465,580),25,Color("ffe394"))
+	for i in range(3):
+		draw_circle(Vector2(590+i*26,608),5,Color("ffe394") if i==story_page else Color("43556f"))
+	_hud_text("ENTER / SPACE / A / CLICK: " + ("FINISH" if story_page==2 else "NEXT"),Vector2(63,678),19,Color.WHITE)
+	_hud_text("ESC / B: SKIP",Vector2(1050,678),17,Color("d9eafa"))
