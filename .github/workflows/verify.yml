@@ -32,20 +32,4 @@ jobs:
         run: |
           & $env:GODOT --headless --path . --script tests/test_game.gd
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Test packaged Windows game
-        if: runner.os == 'Windows' && github.event_name != 'pull_request'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $packageDir = "$env:RUNNER_TEMP/package"
-          New-Item -ItemType Directory -Force $packageDir | Out-Null
-          gh release download v1.0.0 --repo quietbytehq/skypop --pattern '*windows-x86_64.zip' --dir $packageDir
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $archive = Get-ChildItem $packageDir -Filter '*.zip' | Select-Object -First 1
-          Expand-Archive $archive.FullName "$packageDir/game"
-          $game = Get-ChildItem "$packageDir/game" -Filter SkyPop.exe -Recurse | Select-Object -First 1
-          $process = Start-Process -FilePath $game.FullName -ArgumentList '--headless','--quit-after','120' -Wait -PassThru -RedirectStandardOutput "$packageDir/stdout.log" -RedirectStandardError "$packageDir/stderr.log"
-          Get-Content "$packageDir/stdout.log"
-          Get-Content "$packageDir/stderr.log"
-          if ($process.ExitCode -ne 0) { exit $process.ExitCode }
+      # Current release ZIPs are checked by Windows release checks.

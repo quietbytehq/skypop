@@ -1,0 +1,67 @@
+name: Windows release checks
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release whose Windows ZIP should be tested
+        required: true
+        default: "v1.1.0"
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install verified Godot
+        shell: pwsh
+        run: |
+          $base = 'https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable'
+          $name = 'Godot_v4.7.2-stable_win64.exe.zip'
+          $archive = Join-Path $env:RUNNER_TEMP $name
+          Invoke-WebRequest "$base/$name" -OutFile $archive
+          $checks = (Invoke-WebRequest "$base/SHA512-SHA256SUMS-1.1.0.txt").Content
+          $expected = (($checks -split "`n" | Where-Object { $_.Trim().EndsWith($name) }) -split '\s+')[0]
+          if (!$expected -or (Get-FileHash $archive -Algorithm SHA512).Hash -ne $expected) { throw 'Godot checksum mismatch' }
+          Expand-Archive $archive "$env:RUNNER_TEMP/godot"
+          $exe = Get-ChildItem "$env:RUNNER_TEMP/godot" -Filter '*console.exe' | Select-Object -First 1
+          "GODOT=$($exe.FullName)" >> $env:GITHUB_ENV
+      - name: Test source on Windows
+        shell: pwsh
+        run: |
+          & $env:GODOT --headless --editor --path . --import --quit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $files = @('tests/test_game.gd','tests/test_story_online.gd','tests/test_pause_menu.gd')
+          foreach ($file in $files) {
+            $env:APPDATA = Join-Path $env:RUNNER_TEMP ("game-test-" + [IO.Path]::GetFileNameWithoutExtension($file))
+            New-Item -ItemType Directory -Force $env:APPDATA | Out-Null
+            & $env:GODOT --headless --path . --script $file
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Verify and run actual Windows release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $package = Join-Path $env:RUNNER_TEMP 'windows-release'
+          New-Item -ItemType Directory -Force $package | Out-Null
+          gh release download $env:RELEASE_TAG --pattern 'SkyPop-1.1.0-windows-x86_64.zip' --pattern 'SHA256SUMS-1.1.0' --dir $package
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $archive = Join-Path $package 'SkyPop-1.1.0-windows-x86_64.zip'
+          $line = Get-Content (Join-Path $package 'SHA256SUMS-1.1.0') | Where-Object { $_.Trim().EndsWith('SkyPop-1.1.0-windows-x86_64.zip') }
+          $expected = ($line -split '\s+')[0]
+          if (!$expected -or (Get-FileHash $archive -Algorithm SHA256).Hash -ne $expected) { throw 'Release checksum mismatch' }
+          Expand-Archive $archive "$package/game"
+          $exe = Get-ChildItem "$package/game" -Recurse -Filter 'SkyPop.exe' | Select-Object -First 1
+          if (!$exe) { throw 'Windows executable missing' }
+          $env:APPDATA = Join-Path $env:RUNNER_TEMP 'packaged-game-data'
+          New-Item -ItemType Directory -Force $env:APPDATA | Out-Null
+          $process = Start-Process -FilePath $exe.FullName -WorkingDirectory $exe.DirectoryName -ArgumentList '--headless','--quit-after','120' -PassThru -RedirectStandardOutput "$package/stdout.log" -RedirectStandardError "$package/stderr.log"
+          if (!$process.WaitForExit(120000)) { $process.Kill(); throw 'Packaged game startup timed out' }
+          Get-Content "$package/stdout.log"
+          $errors = Get-Content "$package/stderr.log" -Raw
+          Write-Output $errors
+          if ($process.ExitCode -ne 0) { throw "Packaged game exited with $($process.ExitCode)" }
+          if ($errors -match 'SCRIPT ERROR|Parse Error|Failed loading resource|Cannot open file') { throw 'Packaged game reported missing resources or script errors' }
