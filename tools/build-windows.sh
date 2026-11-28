@@ -10,3 +10,4 @@ touch build/.gdignore
 cp LICENSE NOTICE README.md "$out/"
 cp -R LICENSES "$out/"
 cp tools/README-windows.txt "$out/README.txt"
+cp docs/SkyPop-How-to-Play.pdf "$out/"
