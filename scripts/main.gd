@@ -1,6 +1,10 @@
 extends Node2D
 
 const OnlineScores = preload("res://scripts/online.gd")
+var browser = preload("res://scripts/browser.gd").new()
+var browser_opener: Callable = browser.open_url
+const GLOBAL_TITLE_BUTTON := Rect2(616,611,232,44)
+const GLOBAL_BOARD_BUTTON := Rect2(656,566,340,44)
 var online_enabled := true
 var story_page := 0
 var story_time := 0.0
@@ -118,6 +122,8 @@ var music_player: AudioStreamPlayer
 
 
 func _ready() -> void:
+	add_child(browser)
+	browser.failed.connect(_browser_failed)
 	rng.randomize()
 	online_enabled = SaveGame.get_online_enabled()
 	logo_font = load("res://assets/fonts/LilitaOne-Regular.ttf")
@@ -1083,6 +1089,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				name_entry += char(key_event.unicode).to_upper() if char(key_event.unicode).to_upper() in "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ._-" else ""
 			queue_redraw()
 			return
+		if game_state in ["title", "leaderboard"] and key_event.keycode == KEY_G:
+			open_global_scores()
+			get_viewport().set_input_as_handled()
+			return
 		if game_state == "title":
 			if key_event.keycode == KEY_H or key_event.keycode == KEY_TAB:
 				leaderboard_entries = SaveGame.get_high_scores()
@@ -1125,15 +1135,24 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif Rect2(238, 611, 160, 44).has_point(event.position):
 				leaderboard_entries = SaveGame.get_high_scores()
 				game_state = "leaderboard"
+			elif GLOBAL_TITLE_BUTTON.has_point(event.position):
+				open_global_scores()
 			elif Rect2(412, 611, 190, 44).has_point(event.position):
 				_toggle_music()
 			else:
 				_begin_game()
 		elif game_state == "leaderboard" and event.button_index == MOUSE_BUTTON_LEFT:
-			_reset_run()
+			if GLOBAL_BOARD_BUTTON.has_point(event.position):
+				open_global_scores()
+			else:
+				_reset_run()
 		elif game_state == "playing" and not paused and not settings_open and event.button_index == MOUSE_BUTTON_RIGHT:
 			_use_special()
 	if event is InputEventJoypadButton and event.pressed:
+		if game_state in ["title", "leaderboard"] and not settings_open and event.button_index == JOY_BUTTON_Y:
+			open_global_scores()
+			get_viewport().set_input_as_handled()
+			return
 		if game_state == "name_entry":
 			if event.button_index == JOY_BUTTON_X:
 				_toggle_online()
@@ -1824,8 +1843,8 @@ func _draw_title() -> void:
 	if _title_prompt_visible():
 		_hud_text("PRESS ANY KEY TO START", Vector2(73, 548), 25, Color("fff1b0"))
 	_hud_text("CLICK OR PRESS ANY GAMEPAD BUTTON", Vector2(75, 581), 12, Color("b7d5e5"))
-	var cards := [Rect2(64,611,160,44),Rect2(238,611,160,44),Rect2(412,611,190,44)]
-	var labels := ["F1  SETTINGS", "H  TOP TEN", "M  MUSIC " + ("ON" if music_enabled else "OFF")]
+	var cards := [Rect2(64,611,160,44),Rect2(238,611,160,44),Rect2(412,611,190,44),GLOBAL_TITLE_BUTTON]
+	var labels := ["F1  SETTINGS", "H  TOP TEN", "M  MUSIC " + ("ON" if music_enabled else "OFF"),"G / Y  GLOBAL TOP 100"]
 	var mouse := get_global_mouse_position()
 	for i in range(cards.size()):
 		_draw_glass_panel(cards[i], Color("ffd984") if cards[i].has_point(mouse) else Color("6095b0"))
@@ -1864,8 +1883,10 @@ func _draw_leaderboard() -> void:
 		draw_string(score_font,Vector2(785,y+21),entry_score,HORIZONTAL_ALIGNMENT_RIGHT,194,21,tint if has_entry else Color("617c94"))
 		if i == 2:
 			draw_line(Vector2(274,y+28),Vector2(1006,y+28),Color(0.7,0.8,1,0.18),1)
-	_display_text("YOUR NEXT ADVENTURE AWAITS",Vector2(0,585),21,Color("f5d78d"),HORIZONTAL_ALIGNMENT_CENTER,1280)
-	_ui_text(Vector2(0,610),"ENTER / GAMEPAD START / CLICK TO PLAY AGAIN",HORIZONTAL_ALIGNMENT_CENTER,1280,13,Color("b9d3e9"))
+	_draw_glass_panel(Rect2(284,566,340,44),Color("69dce7"))
+	_ui_text(Vector2(284,594),"PLAY AGAIN [ENTER / A]",HORIZONTAL_ALIGNMENT_CENTER,340,15,Color("b9d3e9"))
+	_draw_glass_panel(GLOBAL_BOARD_BUTTON,Color("ffd984"))
+	_ui_text(Vector2(656,594),"GLOBAL TOP 100 [G / Y]",HORIZONTAL_ALIGNMENT_CENTER,340,15,Color("ffe394"))
 
 
 func _draw_settings() -> void:
@@ -2069,3 +2090,20 @@ func _pause_button_style(selected: bool) -> StyleBoxFlat:
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(10)
 	return style
+
+
+func open_global_scores() -> Error:
+	var result: Error = browser_opener.call("https://" + OnlineScores.SITE)
+	if result != OK:
+		_browser_failed()
+	return result
+
+
+func _browser_failed() -> void:
+	var dialog := AcceptDialog.new()
+	dialog.title = "Global Top 100"
+	dialog.dialog_text = "Could not open your browser. Visit https://" + OnlineScores.SITE
+	add_child(dialog)
+	dialog.confirmed.connect(dialog.queue_free)
+	dialog.canceled.connect(dialog.queue_free)
+	dialog.popup_centered(Vector2i(620,180))

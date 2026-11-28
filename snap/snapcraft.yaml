@@ -1,7 +1,7 @@
 name: skypop
 title: SkyPop
 base: core24
-version: '1.1.0'
+version: '1.1.1'
 summary: Colourful rope-firing arcade action across ten stages
 description: |
   Dodge bouncing balls, fire ropes to split them, and clear ten increasingly

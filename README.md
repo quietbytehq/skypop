@@ -78,3 +78,5 @@ Source code: [Apache-2.0](LICENSE). Fonts, Godot components, artwork and bundled
 QuietByte · [hello@quietbytehq.uk](mailto:hello@quietbytehq.uk)
 
 The current Windows package is SkyPop 1.1.0, including The Shattered Sky story, optional global scores and the Resume / Quit pause menu. For a reproducible Windows export, install matching Godot 4.7.2 Windows templates and run `tools/build-windows.sh`; local licensed audio is included when supplied under `assets/audio`.
+
+Use **Global Top 100** on the title screen or local high-score screen to open the online scoreboard in your default browser. Keyboard: **G**; gamepad: **Y**. Opening the page sends no score or player name.

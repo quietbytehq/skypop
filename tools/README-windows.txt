@@ -1,4 +1,4 @@
-SkyPop 1.1.0 — The Shattered Sky
+SkyPop 1.1.1 — The Shattered Sky
 QuietByte · hello@quietbytehq.uk
 
 Extract the entire ZIP, then double-click SkyPop.exe.
@@ -18,3 +18,5 @@ Scores are self-reported, not verified; offline submissions are dropped.
 Source: https://github.com/quietbytehq/skypop
 Source code: Apache-2.0. Bundled artwork, fonts and audio retain their
 NOTICE and LICENSES terms. Audio is for use inside SkyPop only.
+
+Open Global Top 100 from the title or local scores: click, G, or gamepad Y.

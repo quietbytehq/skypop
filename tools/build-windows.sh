@@ -1,10 +1,12 @@
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")/.."
-mkdir -p build/1.1.0/Windows
+version=$(sed -n 's/^config\/version="\([^" ]*\)"/\1/p' project.godot)
+out="build/$version/Windows"
+mkdir -p "$out"
 touch build/.gdignore
 "${GODOT:-godot}" --headless --editor --path . --import --quit
-"${GODOT:-godot}" --headless --path . --export-release 'SKYPOP Windows Desktop' build/1.1.0/Windows/SkyPop.exe
-cp LICENSE NOTICE README.md build/1.1.0/Windows/
-cp -R LICENSES build/1.1.0/Windows/
-cp tools/README-windows.txt build/1.1.0/Windows/README.txt
+"${GODOT:-godot}" --headless --path . --export-release 'SKYPOP Windows Desktop' "$out/SkyPop.exe"
+cp LICENSE NOTICE README.md "$out/"
+cp -R LICENSES "$out/"
+cp tools/README-windows.txt "$out/README.txt"

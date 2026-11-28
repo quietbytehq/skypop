@@ -5,7 +5,7 @@ on:
       release_tag:
         description: Release whose Windows ZIP should be tested
         required: true
-        default: "v1.1.0"
+        default: "v1.1.1"
 permissions:
   contents: read
 jobs:
@@ -33,7 +33,7 @@ jobs:
         run: |
           & $env:GODOT --headless --editor --path . --import --quit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $files = @('tests/test_game.gd','tests/test_story_online.gd','tests/test_pause_menu.gd')
+          $files = @('tests/test_game.gd','tests/test_story_online.gd','tests/test_pause_menu.gd','tests/test_global_browser.gd','tests/test_browser.gd')
           foreach ($file in $files) {
             $env:APPDATA = Join-Path $env:RUNNER_TEMP ("game-test-" + [IO.Path]::GetFileNameWithoutExtension($file))
             New-Item -ItemType Directory -Force $env:APPDATA | Out-Null
@@ -48,10 +48,10 @@ jobs:
         run: |
           $package = Join-Path $env:RUNNER_TEMP 'windows-release'
           New-Item -ItemType Directory -Force $package | Out-Null
-          gh release download $env:RELEASE_TAG --pattern 'SkyPop-1.1.0-windows-x86_64.zip' --pattern 'SHA256SUMS-1.1.0' --dir $package
+          gh release download $env:RELEASE_TAG --pattern 'SkyPop-1.1.1-windows-x86_64.zip' --pattern 'SHA256SUMS-1.1.1' --dir $package
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $archive = Join-Path $package 'SkyPop-1.1.0-windows-x86_64.zip'
-          $line = Get-Content (Join-Path $package 'SHA256SUMS-1.1.0') | Where-Object { $_.Trim().EndsWith('SkyPop-1.1.0-windows-x86_64.zip') }
+          $archive = Join-Path $package 'SkyPop-1.1.1-windows-x86_64.zip'
+          $line = Get-Content (Join-Path $package 'SHA256SUMS-1.1.1') | Where-Object { $_.Trim().EndsWith('SkyPop-1.1.1-windows-x86_64.zip') }
           $expected = ($line -split '\s+')[0]
           if (!$expected -or (Get-FileHash $archive -Algorithm SHA256).Hash -ne $expected) { throw 'Release checksum mismatch' }
           Expand-Archive $archive "$package/game"
